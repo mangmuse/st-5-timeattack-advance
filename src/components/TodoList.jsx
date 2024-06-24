@@ -1,15 +1,16 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { todoApi } from "../api/todos";
+import todoApi, { patchTodo } from "../api/todos";
 
 export default function TodoList() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const {
     data: todos,
     error,
-    isPending,
-    refetch,
+    isLoading,
   } = useQuery({
     queryKey: ["todos"],
     queryFn: async () => {
@@ -18,28 +19,33 @@ export default function TodoList() {
     },
   });
 
-  // TODO: 아래 handleLike 로 구현되어 있는 부분을 useMutation 으로 리팩터링 해보세요. 모든 기능은 동일하게 동작해야 합니다.
-  const queryClient = useQueryClient();
-  const handleLike = async (id, currentLiked) => {
-    const previousTodos = [...todos];
-    try {
+  const mutation = useMutation({
+    mutationFn: ({ id, liked }) => patchTodo(id, { liked }),
+    onMutate: async ({ id, liked }) => {
+      await queryClient.cancelQueries({ queryKey: ["todos"] });
+
+      const previousTodos = queryClient.getQueryData(["todos"]);
+
       queryClient.setQueryData(["todos"], (prev) =>
-        prev.map((todo) =>
-          todo.id === id ? { ...todo, liked: !todo.liked } : todo,
-        ),
+        prev.map((todo) => (todo.id === id ? { ...todo, liked } : todo))
       );
-      await todoApi.patch(`/todos/${id}`, {
-        liked: !currentLiked,
-      });
-    } catch (err) {
+
+      return { previousTodos };
+    },
+    onError: (err, context) => {
+      queryClient.setQueryData(["todos"], context.previousTodos);
       console.error(err);
-      queryClient.setQueryData(["todos"], previousTodos);
-    } finally {
-      refetch();
-    }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
+  });
+
+  const handleLike = (id, currentLiked) => {
+    mutation.mutate({ id, liked: !currentLiked });
   };
 
-  if (isPending) {
+  if (isLoading) {
     return <div style={{ fontSize: 36 }}>로딩중...</div>;
   }
 

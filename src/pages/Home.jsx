@@ -6,26 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import todoApi from "../api/todos";
 
 export default function Home() {
-  // TODO: useQuery 로 리팩터링 하세요.
-  // const [isLoading, setIsLoading] = useState(true);
-  // const [error, setError] = useState(null);
-  // const [data, setData] = useState([]);
-
-  // const fetchData = async () => {
-  //   try {
-  //     const response = await todoApi.get("/todos");
-  //     setData(response.data);
-  //   } catch (err) {
-  //     setError(err);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   fetchData();
-  // }, []);
-
   const { data, isLoading, error } = useQuery({
     queryKey: ["todos"],
     queryFn: () => todoApi.getTodos(),

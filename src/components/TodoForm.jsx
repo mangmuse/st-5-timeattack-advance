@@ -17,7 +17,7 @@ export default function TodoForm({}) {
   // TODO: useMutation 으로 리팩터링 하세요.
   const handleAddTodo = async (e) => {
     e.preventDefault();
-    addTodo({
+    await addTodo({
       id: Date.now().toString(),
       title,
       contents,
